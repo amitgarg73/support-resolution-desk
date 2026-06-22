@@ -5,6 +5,7 @@ import os
 import time
 import urllib.error
 import urllib.request
+import uuid
 from dataclasses import asdict
 from typing import Any
 
@@ -37,16 +38,23 @@ class ArgusClient:
             detail = exc.read().decode("utf-8", errors="replace")
             raise RuntimeError(f"Argus POST {path} failed: {exc.code} {detail}") from exc
 
+    def _sid(self, result: WorkflowResult) -> str:
+        # Argus session id must be a UUID. Derive a stable one from the readable
+        # session id (deterministic, so re-runs are idempotent); the readable id is
+        # sent as external_id and metadata for display/joins.
+        return str(uuid.uuid5(uuid.NAMESPACE_URL, f"support_resolution_desk:{result.session_id}"))
+
     def open_session(self, result: WorkflowResult) -> None:
         self._post("/api/ingest/session/open", {
-            "session_id": result.session_id,
+            "session_id": self._sid(result),
+            "external_id": result.session_id,
             "session_type": "support_refund_triage",
-            "metadata": {"ticket_id": result.ticket_id, "tenant_demo": "support_resolution_desk"},
+            "metadata": {"ticket_id": result.ticket_id, "external_id": result.session_id, "tenant_demo": "support_resolution_desk"},
         })
 
     def trace(self, result: WorkflowResult, event: TraceEvent) -> None:
         self._post("/api/ingest/trace", {
-            "session_id": result.session_id,
+            "session_id": self._sid(result),
             "agent": event.agent,
             "step_type": event.step_type,
             "outcome": event.outcome,
@@ -58,7 +66,8 @@ class ArgusClient:
 
     def otlp_payload(self, result: WorkflowResult) -> dict[str, Any]:
         base = time.time_ns()
-        trace_id = result.session_id.encode("utf-8").hex()[:32].ljust(32, "0")
+        sid = self._sid(result)
+        trace_id = sid.replace("-", "")[:32].ljust(32, "0")
         spans: list[dict[str, Any]] = []
 
         for index, event in enumerate(result.traces, start=1):
@@ -70,7 +79,7 @@ class ArgusClient:
             model = event.payload.get("model") if isinstance(event.payload, dict) else None
 
             attrs = [
-                {"key": "argus.session_id", "value": {"stringValue": result.session_id}},
+                {"key": "argus.session_id", "value": {"stringValue": sid}},
                 {"key": "argus.agent", "value": {"stringValue": event.agent}},
                 {"key": "argus.step_type", "value": {"stringValue": event.step_type}},
                 {"key": "llm.token_count.input", "value": {"intValue": event.tokens_input}},
@@ -104,7 +113,7 @@ class ArgusClient:
 
     def eval(self, result: WorkflowResult, item: EvalResult) -> None:
         self._post("/api/ingest/eval", {
-            "session_id": result.session_id,
+            "session_id": self._sid(result),
             "agent": item.agent,
             "eval_name": item.eval_name,
             "layer": item.layer,
@@ -116,7 +125,7 @@ class ArgusClient:
 
     def outcome(self, result: WorkflowResult) -> None:
         self._post("/api/ingest/eval", {
-            "session_id": result.session_id,
+            "session_id": self._sid(result),
             "agent": "workflow",
             "eval_name": "business_outcome",
             "layer": 5,
@@ -134,7 +143,7 @@ class ArgusClient:
     def close_session(self, result: WorkflowResult) -> None:
         quality = sum(e.score for e in result.evals) / len(result.evals) if result.evals else None
         self._post("/api/ingest/session/close", {
-            "session_id": result.session_id,
+            "session_id": self._sid(result),
             "result_summary": result.summary,
             "terminal_reason": "completed" if result.outcome_status != "failed" else "business_failure",
             "quality_score": quality,
