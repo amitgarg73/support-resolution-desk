@@ -14,7 +14,9 @@ from .models import EvalResult, TraceEvent, WorkflowResult
 class ArgusClient:
     def __init__(self) -> None:
         self.base_url = os.getenv("ARGUS_URL", "").rstrip("/")
-        self.ingest_key = os.getenv("ARGUS_INGEST_KEY", "")
+        # ARGUS_API_KEY is the name Argus's Connection panel uses; keep
+        # ARGUS_INGEST_KEY as a fallback for older configs.
+        self.ingest_key = os.getenv("ARGUS_API_KEY") or os.getenv("ARGUS_INGEST_KEY", "")
         self.enabled = bool(self.base_url and self.ingest_key)
 
     def _post(self, path: str, payload: dict[str, Any]) -> None:

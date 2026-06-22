@@ -29,7 +29,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       ARGUS_URL: ${{ secrets.ARGUS_URL }}
-      ARGUS_INGEST_KEY: ${{ secrets.ARGUS_INGEST_KEY }}
+      ARGUS_API_KEY: ${{ secrets.ARGUS_API_KEY }}
     steps:
       - uses: actions/checkout@v4
 
