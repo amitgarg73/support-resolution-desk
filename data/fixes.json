@@ -2,12 +2,12 @@
   "fixes": {
     "policy_warranty_window_miss": {
       "agent": "policy",
-      "applied_at": "2026-06-22T20:51:40.510209+00:00",
+      "applied_at": "2026-06-22T20:59:13.761926+00:00",
       "checkpoint_id": null,
       "fixed": true,
       "pattern_name": "eval_quality_cascade",
       "source": "argus",
-      "suggested_fix": "test"
+      "suggested_fix": "warranty eligible within 30 days"
     }
   }
 }
