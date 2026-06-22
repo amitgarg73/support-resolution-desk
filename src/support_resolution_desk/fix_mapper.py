@@ -75,8 +75,11 @@ def main() -> None:
     payload = json.loads(raw)
     fix_key = apply_argus_payload(payload)
     if not fix_key:
-        print("No local fix mapping matched this Argus payload.")
-        sys.exit(2)
+        # No matching local fix is a clean no-op, not a failure: Argus dispatched a
+        # valid payload that this tenant has no mapping for. Exit 0 so the run stays
+        # green; a red run should mean a real apply error, not "nothing matched".
+        print("No local fix mapping matched this Argus payload; nothing to apply.")
+        return
     print(f"Applied local fix: {fix_key}")
 
 
