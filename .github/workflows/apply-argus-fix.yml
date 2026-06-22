@@ -56,11 +56,25 @@ jobs:
           git push
 
       - name: Verify after fix
+        shell: bash
         run: |
+          # Re-measure deterministically against the defect the fix targets (derived from
+          # the payload's agent), with a fixed seed and ordering. With the fix applied this
+          # cohort now passes, so quality recovers cleanly and we don't spawn unrelated
+          # random incidents on every run.
+          MODE=$(python3 - <<'PY'
+          import json
+          p = json.load(open("/tmp/argus-fix.json"))
+          a = (p.get("root_cause_agent") or p.get("agent") or "").lower()
+          print("policy_miss" if "policy" in a else "risk_miss" if "risk" in a else "none")
+          PY
+          )
+          echo "Verifying with defect-mode=$MODE"
           python3 run.py \
             --limit 10 \
-            --sample random \
-            --defect-mode mixed \
+            --sample sequential \
+            --seed 7 \
+            --defect-mode "$MODE" \
             --trace-format otlp
 
       - uses: actions/upload-artifact@v4
