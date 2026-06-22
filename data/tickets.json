@@ -1,0 +1,193 @@
+[
+  {
+    "id": "TCK-1001",
+    "customer_tier": "vip",
+    "days_since_purchase": 8,
+    "order_value": 899,
+    "tracking_status": "not_delivered",
+    "item_condition": "unknown",
+    "stock_available": true,
+    "prior_refunds_90d": 0,
+    "message": "My laptop never arrived. Tracking has been stuck for a week and I need this for work tomorrow.",
+    "expected": {
+      "issue_category": "failed_delivery",
+      "policy_eligible": true,
+      "risk_level": "medium",
+      "final_action": "replace",
+      "requires_escalation": true,
+      "outcome_status": "successful"
+    }
+  },
+  {
+    "id": "TCK-1002",
+    "customer_tier": "standard",
+    "days_since_purchase": 42,
+    "order_value": 129,
+    "tracking_status": "delivered",
+    "item_condition": "opened",
+    "stock_available": true,
+    "prior_refunds_90d": 0,
+    "message": "I opened these headphones and decided I do not like the color. Can I get a refund?",
+    "expected": {
+      "issue_category": "buyer_remorse",
+      "policy_eligible": false,
+      "risk_level": "low",
+      "final_action": "deny",
+      "requires_escalation": false,
+      "outcome_status": "successful"
+    }
+  },
+  {
+    "id": "TCK-1003",
+    "customer_tier": "standard",
+    "days_since_purchase": 12,
+    "order_value": 79,
+    "tracking_status": "delivered",
+    "item_condition": "unopened",
+    "stock_available": true,
+    "prior_refunds_90d": 1,
+    "message": "I ordered the wrong phone case. It is unopened. I would like to return it.",
+    "expected": {
+      "issue_category": "buyer_remorse",
+      "policy_eligible": true,
+      "risk_level": "low",
+      "final_action": "refund",
+      "requires_escalation": false,
+      "outcome_status": "successful"
+    }
+  },
+  {
+    "id": "TCK-1004",
+    "customer_tier": "standard",
+    "days_since_purchase": 17,
+    "order_value": 349,
+    "tracking_status": "delivered",
+    "item_condition": "damaged",
+    "stock_available": true,
+    "prior_refunds_90d": 0,
+    "message": "The monitor arrived cracked. I attached photos of the broken screen and packaging.",
+    "expected": {
+      "issue_category": "damaged_item",
+      "policy_eligible": true,
+      "risk_level": "low",
+      "final_action": "replace",
+      "requires_escalation": false,
+      "outcome_status": "successful"
+    }
+  },
+  {
+    "id": "TCK-1005",
+    "customer_tier": "standard",
+    "days_since_purchase": 5,
+    "order_value": 649,
+    "tracking_status": "delivered",
+    "item_condition": "opened",
+    "stock_available": true,
+    "prior_refunds_90d": 5,
+    "message": "The tablet is fine but I changed my mind. Refund me today or I will file a chargeback.",
+    "expected": {
+      "issue_category": "buyer_remorse",
+      "policy_eligible": false,
+      "risk_level": "high",
+      "final_action": "escalate",
+      "requires_escalation": true,
+      "outcome_status": "partial"
+    }
+  },
+  {
+    "id": "TCK-1006",
+    "customer_tier": "vip",
+    "days_since_purchase": 35,
+    "order_value": 1199,
+    "tracking_status": "delivered",
+    "item_condition": "hardware_failure",
+    "stock_available": false,
+    "prior_refunds_90d": 0,
+    "message": "The workstation powers off randomly. This started after three weeks and now I cannot finish client work.",
+    "expected": {
+      "issue_category": "warranty_failure",
+      "policy_eligible": true,
+      "risk_level": "medium",
+      "final_action": "escalate",
+      "requires_escalation": true,
+      "outcome_status": "successful"
+    }
+  },
+  {
+    "id": "TCK-1007",
+    "customer_tier": "standard",
+    "days_since_purchase": 70,
+    "order_value": 44,
+    "tracking_status": "delivered",
+    "item_condition": "opened",
+    "stock_available": true,
+    "prior_refunds_90d": 0,
+    "message": "This USB hub stopped working after two months. Can you help?",
+    "expected": {
+      "issue_category": "warranty_failure",
+      "policy_eligible": true,
+      "risk_level": "low",
+      "final_action": "replace",
+      "requires_escalation": false,
+      "outcome_status": "successful"
+    }
+  },
+  {
+    "id": "TCK-1008",
+    "customer_tier": "standard",
+    "days_since_purchase": 3,
+    "order_value": 28,
+    "tracking_status": "delivered",
+    "item_condition": "opened",
+    "stock_available": true,
+    "prior_refunds_90d": 0,
+    "message": "The cable works but I no longer need it. I opened the package.",
+    "expected": {
+      "issue_category": "buyer_remorse",
+      "policy_eligible": false,
+      "risk_level": "low",
+      "final_action": "deny",
+      "requires_escalation": false,
+      "outcome_status": "successful"
+    }
+  },
+  {
+    "id": "TCK-1009",
+    "customer_tier": "vip",
+    "days_since_purchase": 21,
+    "order_value": 259,
+    "tracking_status": "delivered",
+    "item_condition": "damaged",
+    "stock_available": true,
+    "prior_refunds_90d": 0,
+    "message": "The standing desk control panel arrived dented and unsafe to touch. I am posting pictures publicly if this is not fixed.",
+    "expected": {
+      "issue_category": "damaged_item",
+      "policy_eligible": true,
+      "risk_level": "high",
+      "final_action": "escalate",
+      "requires_escalation": true,
+      "outcome_status": "successful"
+    }
+  },
+  {
+    "id": "TCK-1010",
+    "customer_tier": "standard",
+    "days_since_purchase": 120,
+    "order_value": 549,
+    "tracking_status": "delivered",
+    "item_condition": "opened",
+    "stock_available": true,
+    "prior_refunds_90d": 0,
+    "message": "I used this printer for four months and want a full refund because I found it cheaper elsewhere.",
+    "expected": {
+      "issue_category": "buyer_remorse",
+      "policy_eligible": false,
+      "risk_level": "low",
+      "final_action": "deny",
+      "requires_escalation": false,
+      "outcome_status": "successful"
+    }
+  }
+]
+

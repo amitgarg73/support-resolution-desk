@@ -1,0 +1,18 @@
+{
+  "event": "fix.recorded",
+  "agent": "risk",
+  "root_cause_agent": "risk",
+  "pattern_name": "eval_quality_failure",
+  "checkpoint_id": "demo-risk-fix",
+  "failed_evals": [
+    {
+      "agent": "risk",
+      "eval_name": "risk_level_correct",
+      "score": 0,
+      "threshold": 0.7,
+      "reasoning": "risk produced low; expected high because the customer mentioned chargeback, public complaint, legal action, or unsafe product condition."
+    }
+  ],
+  "suggested_fix": "Update the risk agent to escalate tickets that mention chargeback, public complaint, legal action, or unsafe product condition."
+}
+

@@ -1,0 +1,10 @@
+[project]
+name = "support-resolution-desk"
+version = "0.1.0"
+description = "Customer support refund and escalation triage workflow for Argus."
+requires-python = ">=3.10"
+dependencies = []
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+

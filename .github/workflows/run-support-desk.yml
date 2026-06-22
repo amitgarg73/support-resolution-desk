@@ -1,0 +1,59 @@
+name: Run Support Desk Tenant
+
+on:
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: Number of tickets to process
+        required: false
+        default: "10"
+      sample:
+        description: sequential or random
+        required: false
+        default: random
+      defect_mode:
+        description: mixed, none, policy_miss, risk_miss
+        required: false
+        default: mixed
+      trace_format:
+        description: otlp or direct
+        required: false
+        default: otlp
+      seed:
+        description: Optional integer seed for reproducible random sampling
+        required: false
+        default: ""
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    env:
+      ARGUS_URL: ${{ secrets.ARGUS_URL }}
+      ARGUS_INGEST_KEY: ${{ secrets.ARGUS_INGEST_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run support desk sessions
+        shell: bash
+        run: |
+          SEED_ARG=""
+          if [ -n "${{ github.event.inputs.seed }}" ]; then
+            SEED_ARG="--seed ${{ github.event.inputs.seed }}"
+          fi
+
+          python3 run.py \
+            --limit "${{ github.event.inputs.limit || '10' }}" \
+            --sample "${{ github.event.inputs.sample || 'random' }}" \
+            --defect-mode "${{ github.event.inputs.defect_mode || 'mixed' }}" \
+            --trace-format "${{ github.event.inputs.trace_format || 'otlp' }}" \
+            $SEED_ARG
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: support-desk-runs
+          path: runs/

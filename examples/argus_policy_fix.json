@@ -1,0 +1,18 @@
+{
+  "event": "fix.recorded",
+  "agent": "policy",
+  "root_cause_agent": "policy",
+  "pattern_name": "eval_quality_failure",
+  "checkpoint_id": "demo-policy-fix",
+  "failed_evals": [
+    {
+      "agent": "policy",
+      "eval_name": "policy_eligibility_correct",
+      "score": 0,
+      "threshold": 0.7,
+      "reasoning": "policy produced not_eligible; expected eligible for a hardware warranty failure within 180 days."
+    }
+  ],
+  "suggested_fix": "Update the policy agent so verified hardware failures are evaluated against the 180-day warranty window instead of the 30-day refund window."
+}
+
