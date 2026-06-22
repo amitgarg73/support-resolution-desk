@@ -1,0 +1,70 @@
+name: Apply Argus Fix
+
+on:
+  repository_dispatch:
+    types: [argus.fix.proposed]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    env:
+      ARGUS_URL: ${{ secrets.ARGUS_URL }}
+      ARGUS_API_KEY: ${{ secrets.ARGUS_API_KEY }}
+      ARGUS_INGEST_KEY: ${{ secrets.ARGUS_INGEST_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Save Argus fix payload
+        shell: bash
+        run: |
+          cat > /tmp/argus-fix.json <<'JSON'
+          ${{ toJson(github.event.client_payload) }}
+          JSON
+          cat /tmp/argus-fix.json
+
+      - name: Apply fix to tenant state
+        run: python3 apply_fix.py < /tmp/argus-fix.json
+
+      - name: Commit fix state
+        shell: bash
+        run: |
+          if git diff --quiet -- data/fixes.json; then
+            echo "No data/fixes.json change to commit."
+            exit 0
+          fi
+
+          INCIDENT_ID=$(python3 - <<'PY'
+          import json
+          payload = json.load(open("/tmp/argus-fix.json"))
+          print(payload.get("incident_id") or payload.get("int_id") or "argus-fix")
+          PY
+          )
+
+          git config user.name "argus-fix-bot"
+          git config user.email "argus-fix-bot@users.noreply.github.com"
+          git add data/fixes.json
+          git commit -m "Apply Argus fix ${INCIDENT_ID}"
+          git push
+
+      - name: Verify after fix
+        run: |
+          python3 run.py \
+            --limit 10 \
+            --sample random \
+            --defect-mode mixed \
+            --trace-format otlp
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: argus-fix-verification
+          path: runs/
