@@ -55,7 +55,13 @@ def apply_defects(
             "eligibility",
             "not_eligible",
             0.84,
-            "Mistakenly applied the 30-day refund window to a warranty failure.",
+            (
+                f"Applied the 30-day damaged-item window to a warranty_failure case at "
+                f"{int(ticket['days_since_purchase'])} days since purchase. Past 30 days the "
+                "item was judged ineligible. Eligibility conclusion: not_eligible, recommended "
+                "action deny. (Note: warranty failures carry a 180-day window, so this rule "
+                "selection is the wrong window for the issue.)"
+            ),
             {"recommended_action": "deny", "defect": "warranty_window_miss"},
         )
 
@@ -69,7 +75,15 @@ def apply_defects(
             "risk_level",
             "low",
             0.79,
-            "Missed escalation language and treated the ticket as routine.",
+            (
+                "Risk level low (confidence 0.79). Checked the five escalation triggers "
+                "(chargeback, legal threat, public complaint, repeat offender, high-value) and "
+                "recorded none as fired, treating the ticket as routine. Evidence: "
+                f"prior_refunds_90d={int(ticket['prior_refunds_90d'])}, "
+                f"order_value=${float(ticket['order_value']):.0f}, tier='{ticket['customer_tier']}'. "
+                "(Note: the message contains escalation language that should have fired the "
+                "chargeback or public-complaint trigger; it was missed here.)"
+            ),
             {"triggers": [], "defect": "escalation_language_miss"},
         )
 
