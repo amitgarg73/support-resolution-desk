@@ -20,7 +20,7 @@ class ArgusClient:
         self.ingest_key = os.getenv("ARGUS_API_KEY") or os.getenv("ARGUS_INGEST_KEY", "")
         self.enabled = bool(self.base_url and self.ingest_key)
 
-    def _post(self, path: str, payload: dict[str, Any]) -> None:
+    def _post(self, path: str, payload: dict[str, Any], timeout: int = 15) -> None:
         if not self.enabled:
             return
         url = f"{self.base_url}{path}"
@@ -32,7 +32,7 @@ class ArgusClient:
             method="POST",
         )
         try:
-            with urllib.request.urlopen(req, timeout=15) as res:
+            with urllib.request.urlopen(req, timeout=timeout) as res:
                 res.read()
         except urllib.error.HTTPError as exc:
             detail = exc.read().decode("utf-8", errors="replace")
@@ -53,6 +53,9 @@ class ArgusClient:
         })
 
     def trace(self, result: WorkflowResult, event: TraceEvent) -> None:
+        # entity_id = the work item (ticket). Argus keys per-ticket quality + outcome
+        # reconciliation on it; the server judge reads it from payload.entity_id.
+        payload = {**event.payload, "entity_id": result.ticket_id}
         self._post("/api/ingest/trace", {
             "session_id": self._sid(result),
             "agent": event.agent,
@@ -61,7 +64,8 @@ class ArgusClient:
             "latency_ms": event.latency_ms,
             "tokens_input": event.tokens_input,
             "tokens_output": event.tokens_output,
-            "payload": event.payload,
+            "entity_id": result.ticket_id,
+            "payload": payload,
         })
 
     def otlp_payload(self, result: WorkflowResult) -> dict[str, Any]:
@@ -82,6 +86,7 @@ class ArgusClient:
                 {"key": "argus.session_id", "value": {"stringValue": sid}},
                 {"key": "argus.agent", "value": {"stringValue": event.agent}},
                 {"key": "argus.step_type", "value": {"stringValue": event.step_type}},
+                {"key": "argus.entity_id", "value": {"stringValue": result.ticket_id}},
                 {"key": "llm.token_count.input", "value": {"intValue": event.tokens_input}},
                 {"key": "llm.token_count.output", "value": {"intValue": event.tokens_output}},
                 {"key": "argus.sequence", "value": {"intValue": index}},
@@ -120,6 +125,7 @@ class ArgusClient:
             "score": item.score,
             "passed": item.passed,
             "threshold": item.threshold,
+            "entity_id": result.ticket_id,
             "detail": {"reasoning": item.reasoning},
         })
 
@@ -132,6 +138,7 @@ class ArgusClient:
             "score": result.outcome_score,
             "passed": result.outcome_score >= 0.7,
             "threshold": 0.7,
+            "entity_id": result.ticket_id,
             "detail": {
                 "status": result.outcome_status,
                 "satisfaction_score": result.satisfaction_score,
@@ -156,6 +163,34 @@ class ArgusClient:
             },
         })
 
+    def trigger_server_judge(self, result: WorkflowResult) -> None:
+        """Ask Argus to run the canonical server judge on this session: it scores L4 quality
+        per ticket and writes the Outcome Ledger predictions. Best-effort and longer-timeout
+        (the judge calls an LLM per criterion); a failure never breaks the run."""
+        if not self.enabled:
+            return
+        try:
+            self._post("/api/compute/judge", {"session_id": self._sid(result)}, timeout=120)
+        except Exception as exc:  # noqa: BLE001 - best effort, never break the pipeline
+            print(f"  [argus] server judge trigger failed: {exc}")
+
+    def outcome_to_ledger(self, result: WorkflowResult) -> None:
+        """Connect the real outcome to its trace-based prediction so the ledger reconciles.
+        Keyed on the ticket; label is the deterministic resolution result (the ground truth)."""
+        if not self.enabled:
+            return
+        label = "fail" if result.outcome_status == "failed" else "success"
+        try:
+            self._post("/api/ingest/outcome", {
+                "entity_id": result.ticket_id,
+                "session_id": self._sid(result),
+                "label": label,
+                "value": result.outcome_score,
+                "source": "confirmed",
+            })
+        except Exception as exc:  # noqa: BLE001 - best effort
+            print(f"  [argus] ledger outcome push failed: {exc}")
+
     def send(self, result: WorkflowResult, traces: str = "direct") -> None:
         self.open_session(result)
         if traces == "otlp":
@@ -163,10 +198,15 @@ class ArgusClient:
         else:
             for trace in result.traces:
                 self.trace(result, trace)
-        for item in result.evals:
-            self.eval(result, item)
+        # L4 quality is scored by the canonical Argus server judge (triggered below), not
+        # pushed from here — so the same judge runs for every tenant. We still report the
+        # L5 business outcome as a KPI.
         self.outcome(result)
         self.close_session(result)
+        # After close (terminal_reason is set) the server judge scores L4 + writes the
+        # ledger prediction; then connect the real outcome so it reconciles against it.
+        self.trigger_server_judge(result)
+        self.outcome_to_ledger(result)
 
     def serialize(self, result: WorkflowResult) -> dict[str, Any]:
         return asdict(result)
